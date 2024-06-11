@@ -23,17 +23,13 @@ class SegmentationAppModel:
         Args:
             detectors (list): List of tuples containing config file, checkpoint file, and description.
             special_model_index (int): Index of the special model used for mask detection.
-            device (str): Device to be used for model inference (default: 'cuda:0').
+            device (device): Device to be used for model inference (default: 'cuda:0').
         """
-        self.device = device if device else self.get_default_device()
+        self.device = device
         self.models, self.masks_detector = self.load_models(detectors, special_model_index, self.device)
         self.class_names = ['blood_vessel', 'glomerulus', 'unsure']
         self.tile_meta = None
         self.ground_truth_annotations = {}
-
-    def get_default_device(self):
-        """Return the default device to use for tensors."""
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def load_models(self, detectors, special_model_index, device='cuda:0'):
         """

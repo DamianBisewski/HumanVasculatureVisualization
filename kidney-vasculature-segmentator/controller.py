@@ -22,7 +22,7 @@ class SegmentationAppController:
             root (Tk): The root window.
             detectors (list): List of tuples containing config file, checkpoint file, and description.
             masks_detector_index (int): Index of the special model used for mask detection.
-            device (str): Device to be used for model inference (default: 'cuda:0').
+            device (device): Device to be used for model inference (default: 'cuda:0').
         """
         self.model = SegmentationAppModel(detectors, masks_detector_index, device)
         self.view = SegmentationAppView(root, self)

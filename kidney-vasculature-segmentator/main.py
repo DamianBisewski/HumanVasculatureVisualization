@@ -1,7 +1,14 @@
 # main.py
 
 import tkinter as tk
+import torch
 from controller import SegmentationAppController
+
+
+def get_default_device():
+    """Return the default device to use for tensors."""
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
@@ -37,6 +44,6 @@ if __name__ == "__main__":
          'checkpoints/sb1i.pth',
          'sb1 - RTMDet with Mask Head SwinTransformer backbone COCO chkpt 1')
     ]
-    masks_detector_index = 5 # m1i.pth
-    app = SegmentationAppController(root, detectors, masks_detector_index, 'cuda:0')
+    masks_detector_index = 5  # m1i.pth
+    app = SegmentationAppController(root, detectors, masks_detector_index, get_default_device())
     root.mainloop()
