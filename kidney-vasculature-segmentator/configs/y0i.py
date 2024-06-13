@@ -1,78 +1,68 @@
 # model settings
-norm_cfg = dict(type='BN')
 model = dict(
-    type='RTMDetWithMaskHead',
+    type='YOLOXWithMaskHead',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
-        mean=[103.53, 116.28, 123.675],
-        std=[57.375, 57.12, 58.395],
-        bgr_to_rgb=False,
-        pad_size_divisor=32,
-        batch_augments=None),
+        pad_size_divisor=32),
     mask_head=dict(type='FCNMaskHead',
         num_convs=7,
         in_channels=320,
         conv_out_channels=256,
         num_classes=1),
     backbone=dict(
-        type='CSPNeXt',
-        arch='P5',
-        expand_ratio=0.5,
+        type='CSPDarknet',
         deepen_factor=1.33,
         widen_factor=1.25,
-        channel_attention=True,
-        norm_cfg=dict(type='BN'),
-        act_cfg=dict(type='SiLU', inplace=True)),
+        out_indices=(2, 3, 4),
+        use_depthwise=False,
+        spp_kernal_sizes=(5, 9, 13),
+        norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+        act_cfg=dict(type='Swish'),
+    ),
     neck=dict(
-        type='CSPNeXtPAFPN',
+        type='YOLOXPAFPN',
         in_channels=[320, 640, 1280],
         out_channels=320,
         num_csp_blocks=4,
-        expand_ratio=0.5,
-        norm_cfg=dict(type='BN'),
-        act_cfg=dict(type='SiLU', inplace=True)),
+        use_depthwise=False,
+        upsample_cfg=dict(scale_factor=2, mode='nearest'),
+        norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+        act_cfg=dict(type='Swish')),
     bbox_head=dict(
-        type='RTMDetSepBNHead',
+        type='YOLOXHead',
         num_classes=3,
         in_channels=320,
-        stacked_convs=2,
         feat_channels=320,
-        anchor_generator=dict(
-            type='MlvlPointGenerator', offset=0, strides=[8, 16, 32]),
-        bbox_coder=dict(type='DistancePointBBoxCoder'),
+        stacked_convs=2,
+        strides=(8, 16, 32),
+        use_depthwise=False,
+        norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+        act_cfg=dict(type='Swish'),
         loss_cls=dict(
-            type='QualityFocalLoss',
+            type='CrossEntropyLoss',
             use_sigmoid=True,
-            beta=2.0,
+            reduction='sum',
             loss_weight=1.0),
-        loss_bbox=dict(type='GIoULoss', loss_weight=2.0),
-        with_objectness=False,
-        exp_on_reg=True,
-        share_conv=True,
-        pred_kernel_size=1,
-        norm_cfg=dict(type='BN'),
-        act_cfg=dict(type='SiLU', inplace=True)),
+        loss_bbox=dict(
+            type='IoULoss',
+            mode='square',
+            eps=1e-16,
+            reduction='sum',
+            loss_weight=5.0),
+        loss_obj=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            reduction='sum',
+            loss_weight=1.0),
+        loss_l1=dict(type='L1Loss', reduction='sum', loss_weight=1.0)),
     train_cfg=dict(
         mask_pos_mode='weighted_sum',
         mask_roi_size=28,
-        assigner=dict(type='DynamicSoftLabelAssigner', topk=13),
-        allowed_border=-1,
-        pos_weight=-1,
-        debug=False),
-    test_cfg=dict(
-        nms_pre=30000,
-        min_bbox_size=0,
-        score_thr=0.001,
-        nms=dict(type='nms', iou_threshold=0.65),
-        max_per_img=300),
+        assigner=dict(type='SimOTAAssigner', center_radius=2.5)),
+    test_cfg=dict(score_thr=0.001,
+                  max_per_img=300,
+                  nms=dict(type='nms', iou_threshold=0.65))
 )
-
-# dataset settings
-dataset_type = 'CocoDataset'
-data_root = '/kaggle/working/'
-img_prefix = '/kaggle/input/hubmap-hacking-the-human-vasculature/test/'
-metainfo = dict(classes=('blood_vessel', 'glomerulus', 'unsure'))
-backend_args = None
 
 # dataset settings
 dataset_type = 'CocoDataset'

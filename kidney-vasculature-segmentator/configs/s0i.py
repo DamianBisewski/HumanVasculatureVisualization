@@ -1,42 +1,39 @@
-# model settings
-norm_cfg = dict(type='BN')
+norm_cfg = dict(type='GN', num_groups=32)
 model = dict(
     type='RTMDetWithMaskHead',
     data_preprocessor=dict(
         type='DetDataPreprocessor',
-        mean=[103.53, 116.28, 123.675],
-        std=[57.375, 57.12, 58.395],
-        bgr_to_rgb=False,
-        pad_size_divisor=32,
-        batch_augments=None),
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32),
     mask_head=dict(type='FCNMaskHead',
         num_convs=7,
-        in_channels=320,
+        in_channels=256,
         conv_out_channels=256,
         num_classes=1),
     backbone=dict(
-        type='CSPNeXt',
-        arch='P5',
-        expand_ratio=0.5,
-        deepen_factor=1.33,
-        widen_factor=1.25,
-        channel_attention=True,
-        norm_cfg=dict(type='BN'),
-        act_cfg=dict(type='SiLU', inplace=True)),
+        type='mmpretrain.SwinTransformer',
+        arch='large',
+        img_size=384,
+        drop_path_rate=0.2,
+        stage_cfgs=dict(block_cfgs=dict(window_size=12)),
+        out_indices=(1, 2, 3),
+        with_cp=True,),
     neck=dict(
         type='CSPNeXtPAFPN',
-        in_channels=[320, 640, 1280],
-        out_channels=320,
+        in_channels=[384, 768, 1536],
+        out_channels=256,
         num_csp_blocks=4,
         expand_ratio=0.5,
-        norm_cfg=dict(type='BN'),
+        norm_cfg=norm_cfg,
         act_cfg=dict(type='SiLU', inplace=True)),
     bbox_head=dict(
-        type='RTMDetSepBNHead',
+        type='RTMDetHead',
         num_classes=3,
-        in_channels=320,
+        in_channels=256,
         stacked_convs=2,
-        feat_channels=320,
+        feat_channels=256,
         anchor_generator=dict(
             type='MlvlPointGenerator', offset=0, strides=[8, 16, 32]),
         bbox_coder=dict(type='DistancePointBBoxCoder'),
@@ -47,10 +44,7 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0),
         with_objectness=False,
-        exp_on_reg=True,
-        share_conv=True,
-        pred_kernel_size=1,
-        norm_cfg=dict(type='BN'),
+        norm_cfg=norm_cfg,
         act_cfg=dict(type='SiLU', inplace=True)),
     train_cfg=dict(
         mask_pos_mode='weighted_sum',
@@ -66,13 +60,6 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.65),
         max_per_img=300),
 )
-
-# dataset settings
-dataset_type = 'CocoDataset'
-data_root = '/kaggle/working/'
-img_prefix = '/kaggle/input/hubmap-hacking-the-human-vasculature/test/'
-metainfo = dict(classes=('blood_vessel', 'glomerulus', 'unsure'))
-backend_args = None
 
 # dataset settings
 dataset_type = 'CocoDataset'
