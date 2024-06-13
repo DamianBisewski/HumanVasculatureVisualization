@@ -1,0 +1,13 @@
+The dataset hubmap-2023-checkpoints needs to be downloaded from Kaggle to this directory: https://www.kaggle.com/datasets/tascj0/hubmap-2023-checkpoints
+The dataset contains checkpoints for models defined in the configs directory.
+After downloading the dataset it needs to be unzipped. In the directory after unzipping there should be a list of files:
+- m0i.pth
+- m1i.pth
+- r0i.pth
+- r1i.pth
+- s0i.pth
+- s1i.pth
+- sb0i.pth
+- sb1i.pth
+- y0i.pth
+- y1i.pth
