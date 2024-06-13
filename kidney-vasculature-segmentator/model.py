@@ -10,6 +10,7 @@ from ensemble_boxes import weighted_boxes_fusion
 from shapely.geometry import Polygon
 from mmdet.evaluation.functional.mean_ap import eval_map
 
+
 class SegmentationAppModel:
     """
     Model class for the Medical Image Segmentation Application.
@@ -26,7 +27,8 @@ class SegmentationAppModel:
             device (device): Device to be used for model inference (default: 'cuda:0').
         """
         self.device = device
-        self.models, self.masks_detector = self.load_models(detectors, special_model_index, self.device)
+        self.models, self.masks_detector, self.detector_modes =\
+            self.load_models(detectors, special_model_index, self.device)
         self.class_names = ['blood_vessel', 'glomerulus', 'unsure']
         self.tile_meta = None
         self.ground_truth_annotations = {}
@@ -45,12 +47,21 @@ class SegmentationAppModel:
         """
         models = []
         special_model = None
-        for i, (config_file, checkpoint_file, config_description) in enumerate(detectors):
+        detector_modes = []
+        for i, (config_file, checkpoint_file, config_description, detector_mode) in enumerate(detectors):
             model = init_detector(config_file, checkpoint_file, device=device)
-            models.append(model)
+            models.append((model, detector_mode))
+            detector_modes.append(detector_mode)
             if i == special_model_index:
                 special_model = model
-        return models, special_model
+        return models, special_model, detector_modes
+
+    def get_model_by_mode_option(self, mode_option):
+        """Return the model matching the given mode option."""
+        for model, option in self.models:
+            if option == mode_option:
+                return model
+        return None
 
     def generate_img_id(self, image_path):
         """
@@ -109,8 +120,8 @@ class SegmentationAppModel:
             img_result[k] = v.to(self.device)
         img_result.bboxes *= 1440 / 512
         results_list = self.masks_detector.roi_head.predict_mask(img_feats,
-                                                            batch_img_metas, [img_result],
-                                                            rescale=True)
+                                                                 batch_img_metas, [img_result],
+                                                                 rescale=True)
         out = results_list[0].cpu()
         ret = dict(img_id=result['img_id'],
                    ori_shape=(512, 512),
@@ -121,7 +132,7 @@ class SegmentationAppModel:
                                  out['labels'].numpy(), out['masks'].numpy(),)
         return ret
 
-    def perform_inference_mmdet(self, image_path):
+    def perform_inference_mmdet_ensemble(self, image_path):
         """
         Perform inference using MMDetection models and predict masks.
 
@@ -133,7 +144,7 @@ class SegmentationAppModel:
         """
         results = []
         for model in self.models:
-            result = inference_detector(model, image_path)
+            result = inference_detector(model[0], image_path)
             results.append(result)
         weights = [
             2, 2, 2, 2, 1, 1, 1, 1, 2, 2
@@ -162,7 +173,7 @@ class SegmentationAppModel:
                                 'img_path': image_path,
                                 'img_id': 0
                                 }
-        return self.unify_results(self.predict_mask(combined_pred_result))
+        return self.unify_results_mmdet_ensemble(self.predict_mask(combined_pred_result))
 
     def perform_inference_sahi(self, config_path, checkpoint_path,
                                image_path, confidence_threshold,
@@ -188,7 +199,6 @@ class SegmentationAppModel:
         """
         from sahi import AutoDetectionModel
         from sahi.predict import get_sliced_prediction
-
         detection_model = AutoDetectionModel.from_pretrained(
             model_type='mmdet',
             model_path=checkpoint_path,
@@ -199,7 +209,6 @@ class SegmentationAppModel:
                               '2': 'unsure'},
             device=device
         )
-
         result = get_sliced_prediction(
             image_path,
             detection_model,
@@ -208,12 +217,18 @@ class SegmentationAppModel:
             overlap_height_ratio=overlap_height_ratio,
             overlap_width_ratio=overlap_width_ratio,
         )
-
         return self.unify_results_sahi(result)
 
-    def unify_results(self, result):
+    def perform_inference_mmdet_single(self, selected_model, image_path ):
+        model = self.get_model_by_mode_option(selected_model)
+        assert model is not None
+        result = inference_detector(model, image_path)
+        print(result)
+        return self.unify_results_mmdet_single(result)
+
+    def unify_results_mmdet_ensemble(self, result):
         """
-        Unify the results from MMDetection into a standard format.
+        Unify the results from MMDet ensemble into a standard format.
 
         Args:
             result (dict): Prediction result including bounding boxes, scores, labels, and masks.
@@ -232,6 +247,29 @@ class SegmentationAppModel:
             })
         return unified_results
 
+    def unify_results_mmdet_single(self, result):
+        """
+        Unify the results from MMDet model into a standard format.
+
+        Args:
+            result (DetDataSample): Prediction result including bounding boxes, scores, labels, and masks.
+
+        Returns:
+            list: Unified results.
+        """
+        bboxes = result.pred_instances.bboxes.cpu().numpy()
+        scores = result.pred_instances.scores.cpu().numpy()
+        labels = result.pred_instances.labels.cpu().numpy()
+        masks = result.pred_instances.masks.cpu().numpy()
+        unified_results = []
+        for bbox, score, label, mask in zip(bboxes, scores, labels, masks):
+            unified_results.append({
+                'bbox': bbox,
+                'score': score,
+                'label': label,
+                'mask': mask
+            })
+        return unified_results
     def unify_results_sahi(self, result):
         """
         Unify the results from SAHI into a standard format.
@@ -291,9 +329,11 @@ class SegmentationAppModel:
                         if len(contour) > 0:  # Ensure contour is not empty
                             contour = contour.squeeze()
                             if contour.ndim == 2 and contour.shape[0] > 1:  # Ensure contour is valid
-                                ax.plot(contour[:, 0], contour[:, 1], linewidth=2, color=colors(result['label'] % colors.N))
+                                ax.plot(contour[:, 0], contour[:, 1], linewidth=2,
+                                        color=colors(result['label'] % colors.N))
 
-                ax.text(x1, y1 - 2, f'{self.class_names[result["label"]]} {result["score"]:.2f}', fontsize=12, color='white',
+                ax.text(x1, y1 - 2, f'{self.class_names[result["label"]]} {result["score"]:.2f}', fontsize=12,
+                        color='white',
                         bbox=dict(facecolor='red', alpha=0.5))
 
         ax.axis('off')
@@ -400,10 +440,10 @@ class SegmentationAppModel:
 
         intersection = np.logical_and(pred_mask, gt_mask).sum()
         union = np.logical_or(pred_mask, gt_mask).sum()
-        
+
         if union == 0:
             return 0.0
-        
+
         iou = intersection / union
         return iou
 

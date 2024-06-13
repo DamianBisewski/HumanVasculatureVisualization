@@ -9,13 +9,14 @@ class SegmentationAppView:
     Manages the graphical user interface (GUI).
     """
 
-    def __init__(self, root, controller):
+    def __init__(self, root, controller, detectors):
         """
         Initializes the view with the root window and controller.
 
         Args:
             root (Tk): The root window.
             controller (SegmentationAppController): The controller instance.
+            detectors (list): List of tuples containing config file, checkpoint file, and description.
         """
         self.root = root
         self.controller = controller
@@ -24,6 +25,7 @@ class SegmentationAppView:
         self.tk_image = None  # Initialize to avoid garbage collection issues
         self.tk_gt_image = None  # Initialize to avoid garbage collection issues
         self.images_to_delete = []
+        self.detector_mode_options = [detector[3] for detector in detectors]
         
         self.init_gui()
 
@@ -91,8 +93,9 @@ class SegmentationAppView:
                                               font=("Helvetica", self.font_size))
         self.lbl_segmentation_mode.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.segmentation_mode = tk.StringVar(value="MMDetection")  # Default segmentation mode
-        self.segmentation_mode_dropdown = tk.OptionMenu(self.btn_frame, self.segmentation_mode, "MMDetection", "SAHI")
+        self.segmentation_mode = tk.StringVar(value="MMDet ensemble")  # Default segmentation mode
+        self.segmentation_mode_dropdown = tk.OptionMenu(self.btn_frame, self.segmentation_mode, "MMDet ensemble",
+                                                        "SAHI", *self.detector_mode_options)
         self.segmentation_mode_dropdown.config(font=("Helvetica", self.font_size))
         self.segmentation_mode_dropdown.pack(side=tk.LEFT, padx=5, pady=5)
 
@@ -109,7 +112,7 @@ class SegmentationAppView:
                                            font=("Helvetica", self.font_size))
         self.lbl_current_config.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.meta_info_text = tk.Text(self.root, height=4, font=("Helvetica", self.font_size))
+        self.meta_info_text = tk.Text(self.root, height=2, font=("Helvetica", self.font_size))
         self.meta_info_text.pack(fill=tk.X, padx=10, pady=10)
         self.meta_info_text.config(state=tk.DISABLED)
 
@@ -147,25 +150,29 @@ class SegmentationAppView:
 
         self.lbl_base_detector = tk.Label(self.new_config_frame, text="Base Detector:", font=("Helvetica", self.font_size))
         self.lbl_base_detector.pack(side=tk.LEFT, padx=5, pady=5)
-        self.base_detector = tk.StringVar(value="rtmdet")
-        self.base_detector_dropdown = tk.OptionMenu(self.new_config_frame, self.base_detector, "rtmdet", "mask r-cnn")
+        self.base_detector = tk.StringVar(value=self.detector_mode_options[0])
+        self.base_detector_dropdown = tk.OptionMenu(self.new_config_frame, self.base_detector, *self.detector_mode_options)
         self.base_detector_dropdown.config(font=("Helvetica", self.font_size))
         self.base_detector_dropdown.pack(side=tk.LEFT, padx=5, pady=5)
 
         # IoU and mAP display
         self.metrics_frame = tk.Frame(self.root)
-        self.metrics_frame.pack(fill=tk.X, padx=10, pady=10)
-        
+        self.metrics_frame.pack(fill=tk.X, padx=5, pady=5)
+
+        # Use grid geometry manager for better control over layout
+        self.metrics_frame.columnconfigure(0, weight=0)
+        self.metrics_frame.columnconfigure(1, weight=1)
+
         self.lbl_iou = tk.Label(self.metrics_frame, text="IoU Scores:", font=("Helvetica", self.font_size))
-        self.lbl_iou.pack(side=tk.LEFT, padx=5, pady=5)
+        self.lbl_iou.grid(row=0, column=0, padx=5, pady=5, sticky='e')
         self.iou_text = tk.Text(self.metrics_frame, height=2, font=("Helvetica", self.font_size))
-        self.iou_text.pack(fill=tk.X, padx=10, pady=10)
+        self.iou_text.grid(row=0, column=1, padx=10, pady=10, sticky='we')
         self.iou_text.config(state=tk.DISABLED)
        
-        self.lbl_map = tk.Label(self.metrics_frame, text="bboxes mAP Score:", font=("Helvetica", self.font_size))
-        self.lbl_map.pack(side=tk.LEFT, padx=5, pady=5)
-        self.map_text = tk.Text(self.metrics_frame, height=2, font=("Helvetica", self.font_size))
-        self.map_text.pack(fill=tk.X, padx=10, pady=10)
+        self.lbl_map = tk.Label(self.metrics_frame, text="mAP Score:", font=("Helvetica", self.font_size))
+        self.lbl_map.grid(row=1, column=0, padx=5, pady=5, sticky='e')
+        self.map_text = tk.Text(self.metrics_frame, height=1, font=("Helvetica", self.font_size))
+        self.map_text.grid(row=1, column=1, padx=10, pady=10, sticky='we')
         self.map_text.config(state=tk.DISABLED)
 
     def update_font_size(self, font_size):

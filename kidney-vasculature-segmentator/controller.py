@@ -8,6 +8,7 @@ import numpy as np
 from model import SegmentationAppModel
 from view import SegmentationAppView
 
+
 class SegmentationAppController:
     """
     Controller class for the Medical Image Segmentation Application.
@@ -25,7 +26,8 @@ class SegmentationAppController:
             device (device): Device to be used for model inference (default: 'cuda:0').
         """
         self.model = SegmentationAppModel(detectors, masks_detector_index, device)
-        self.view = SegmentationAppView(root, self)
+        self.detectors = detectors
+        self.view = SegmentationAppView(root, self, detectors)
         self.image_files = []
         self.current_index = 0
         self.original_image = None
@@ -183,24 +185,36 @@ class SegmentationAppController:
         self.update_image('left')
         self.update_image('right')
 
+    def get_detector_paths(self, base_detector):
+        for config_path, checkpoint_path, _, mode_option in self.detectors:
+            if mode_option == base_detector:
+                return config_path, checkpoint_path
+        return None, None
+
     def segment_image(self):
         """Segment the loaded image using the selected model and update the results."""
-        if not hasattr(self, 'image_path'):
+        if not hasattr(self, 'image_path') or self.image_path is None:
             messagebox.showwarning("Warning", "Please load an image first")
             return
 
         try:
-            if self.view.segmentation_mode.get() == "MMDetection":
-                results = self.model.perform_inference_mmdet(self.image_path)
-            else:
-                config_path = 'configs/r0i.py'
-                checkpoint_path = 'checkpoints/r0i.pth'
+            selected_model = self.view.segmentation_mode.get()
+            if selected_model is None:
+                messagebox.showerror("Error", f"No model found for selected mode: {selected_model}")
+                return
+            if selected_model == "MMDet ensemble":
+                results = self.model.perform_inference_mmdet_ensemble(self.image_path)
+            elif selected_model == "SAHI":
+                base_detector = self.view.base_detector.get()
+                config_path, checkpoint_path = self.get_detector_paths(base_detector)
                 results = self.model.perform_inference_sahi(config_path, checkpoint_path,
                                                             self.image_path, self.view.score_threshold.get(),
                                                             self.view.height.get(), self.view.width.get(),
                                                             self.view.overlap_height_ratio.get(),
                                                             self.view.overlap_width_ratio.get(),
                                                             self.model.device)
+            else:
+                results = self.model.perform_inference_mmdet_single( selected_model, self.image_path)
 
             self.update_segmented_image(results)
         except Exception as e:
@@ -216,8 +230,9 @@ class SegmentationAppController:
         self.combined_results = combined_results
         image = self.load_image_with_consistent_color(self.image_path)
 
-        self.original_image = self.model.visualize_combined_results(image, combined_results, self.view.score_threshold.get())
-        
+        self.original_image = self.model.visualize_combined_results(image, combined_results,
+                                                                    self.view.score_threshold.get())
+
         self.view.reset_zoom_level('left')  # Reset zoom level
         self.update_image('left')
 
