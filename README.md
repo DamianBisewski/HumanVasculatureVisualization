@@ -3,9 +3,9 @@
 This repository contains a visualization application for the [first-place solution](https://www.kaggle.com/competitions/hubmap-hacking-the-human-vasculature/discussion/429060) from the Kaggle competition "[HuBMAP - Hacking the Human Vasculature](https://www.kaggle.com/competitions/hubmap-hacking-the-human-vasculature/overview)". The competition focused on segmenting human blood vessel structures from microscopy images, with the goal of aiding medical research and development.
 To help users visualize the segmentation results, this app provides an intuitive interface for exploring the output of the winning model.
 Key features of this app:
-    • Segmentation Visualization: Display of microscopy images with overlaid segmentation masks.
-    • SAHI Integration: Uses the [SAHI (Slicing Aided Hyper Inference)](https://github.com/obss/sahi) library for efficient, large-scale image inference, enabling robust performance on high-resolution medical images. SAHI goes through the image first dividing it into smaller tiles and performs segmentation on each tile. This is supposed to increase the accuracy of segmentation and, as mainly the glomeruli are larger and blood vessels smaller, it increases the efficiency of detecting blood vessels.
-    • Easy-to-Use Interface: A simple, clean user interface to browse and inspect results interactively.
+- Segmentation Visualization: Display of microscopy images with overlaid segmentation masks.
+- SAHI Integration: Uses the [SAHI (Slicing Aided Hyper Inference)](https://github.com/obss/sahi) library for efficient, large-scale image inference, enabling robust performance on high-resolution medical images. SAHI goes through the image first dividing it into smaller tiles and performs segmentation on each tile. This is supposed to increase the accuracy of segmentation and, as mainly the glomeruli are larger and blood vessels smaller, it increases the efficiency of detecting blood vessels.
+- Easy-to-Use Interface: A simple, clean user interface to browse and inspect results interactively.
 This repository serves as a demonstration tool for researchers, practitioners, and enthusiasts to explore cutting-edge solutions for biomedical image analysis. 
 ### Usage of the app
 To run the application, the user, being in the app directory, needs to go to the kidney-vasculature-segmentator directory and type `python main.py`
