@@ -11,7 +11,7 @@ This repository serves as a demonstration tool for researchers, practitioners, a
 To run the application, the user, being in the app directory, needs to go to the kidney-vasculature-segmentator directory and type `python main.py`
 ![Starting screen](/images/Zrzut%20ekranu%202024-10-05%20202202.png)
 After the start of the application, the screen above is the screen that appears. To load an image, the user needs to click File → Load Image / Load Directory.
-
+![Load file/directory](images/Zrzut%20ekranu%202024-10-05%20202216.png)
 
 
 
@@ -22,13 +22,13 @@ After the start of the application, the screen above is the screen that appears.
 
 
 If the latter option is chosen, it will load all the images in the selected directory. Then the user can switch images using the Previous and Next buttons which can be found on the left directly below the loaded image. 
-
+![Loaded image](images/Zrzut%20ekranu%202024-10-05%20202245.png)
 There is also an option to load a JSON file with the ground truth. If there is a segmented image for the actually loaded image, it will appear in the upper right part of the screen with annotations attached to it. 
-
+![Ground truth](/images/Zrzut%20ekranu%202024-10-06%20214311.png)
 The application gives 12 options to conduct segmentation of an image. 5 of them are individual models (RTMDet CSPNeXT, RTMDet SWNTR, Mask R-CNN, YOLOX, RTMDet SWNTR COCO), each accessible in two versions, there is also an option to combine all of them in an MMDet ensemble and the last option is SAHI. SAHI can be used with each of the models. 
+![Selection](/images/Zrzut%20ekranu%202024-10-05%20202544.png)
 
-
-
+![IoU/mAP scores](/images/Zrzut%20ekranu%202024-10-06%20215849.png)
 The IoU scores have values between 0 and 1 and for each annotation they show how much the annotation produced by the segmentation and the annotation in the ground truth intersect. This is a quotient of the intersection of both annotations and union of them.
 The mAP score also has values between 0 and 1 and this is the mean average precision of the segmentator.
 
