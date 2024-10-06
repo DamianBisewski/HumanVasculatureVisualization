@@ -10,6 +10,7 @@ This repository serves as a demonstration tool for researchers, practitioners, a
 ### Usage of the app
 To run the application, the user, being in the app directory, needs to go to the kidney-vasculature-segmentator directory and type:
 ``` python main.py
+```
 After the start of the application, the screen above is the screen that appears. To load an image, the user needs to click File → Load Image / Load Directory.
 
 
@@ -36,6 +37,7 @@ The mAP score also has values between 0 and 1 and this is the mean average preci
 
 The application itself can be installed via command line using command:
 ``` git clone https://github.com/DamianBisewski/HumanVasculatureVisualization
+```
 The data for the application can be found at:
 https://www.kaggle.com/competitions/hubmap-hacking-the-human-vasculature/data, to download the data the user needs to click „Download all” which can be found at the right-hand side of the website.
 The checkpoints for the application can be found at:https://www.kaggle.com/competitions/hubmap-hacking-the-human-vasculature/discussion/429060.
