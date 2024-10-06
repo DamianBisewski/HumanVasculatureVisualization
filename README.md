@@ -9,6 +9,7 @@ Key features of this app:
 This repository serves as a demonstration tool for researchers, practitioners, and enthusiasts to explore cutting-edge solutions for biomedical image analysis. 
 ### Usage of the app
 To run the application, the user, being in the app directory, needs to go to the kidney-vasculature-segmentator directory and type `python main.py`
+![Starting screen](/images/Zrzut%20ekranu%202024-10-05%20202202.png)
 After the start of the application, the screen above is the screen that appears. To load an image, the user needs to click File → Load Image / Load Directory.
 
 
